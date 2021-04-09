@@ -66,7 +66,9 @@ const map = `<!DOCTYPE html>
         normalLots = L.icon({ iconUrl: "${normalSlots}", iconSize: [38, 38] }),
         emptyLots = L.icon({ iconUrl: "${emptySlots}", iconSize: [38, 38] }),
         carLoc = L.icon({ iconUrl: "${carLoc}", iconSize: [38, 38] });
-
+      var curCarLocation = L.marker([10.7715454, 106.6577752], {
+          icon: carLoc,
+        }).addTo(mymap);
       function markLocation(lat, long, iconType, id) {
         switch (iconType) {
           case 1:
@@ -118,7 +120,8 @@ const map = `<!DOCTYPE html>
             markerArray[id].bindPopup(popupArray[id]);
             break;
           case 4:
-            L.marker([lat, long], { icon: carLoc }).addTo(mymap);
+            var newLatLng = new L.LatLng(lat, long);
+            curCarLocation.setLatLng(newLatLng); 
             break;
           default:
             L.marker([lat, long], { icon: carLoc }).addTo(mymap);
@@ -139,10 +142,55 @@ const map = `<!DOCTYPE html>
         CUR_LOCATION = location;
       }
 
-      function routing(curLat, curLong, desLat, desLong) {}
+      var routingLine;
+      var routingLayer = L.layerGroup().addTo(mymap);
+      var routingStyle = {
+        color: "#ff7800",
+        weight: 5,
+        opacity: 0.65,
+      };
+      var routingGEOdata = L.geoJSON(routingLine, {
+              style: routingStyle,
+            });
+      // var layerGroup = new L.LayerGroup();
+      // layerGroup.addTo(map);
+      function routing(curLong, curLat, desLong, desLat) {
+        fetch(
+          "https://api.openrouteservice.org/v2/directions/driving-car?api_key=" +
+            ORS_API_KEY +
+            "&start=" +
+            curLong +
+            "," +
+            curLat +
+            "&end=" +
+            desLong +
+            "," +
+            desLat
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            routingLayer.removeLayer(routingGEOdata);
+            // mymap.removeLayer(routingLine);
+            routingLine = [
+              {
+                type: "LineString",
+                coordinates: data.features[0].geometry.coordinates,
+              },
+            ];
+            routingGEOdata = L.geoJSON(routingLine, {
+              style: routingStyle,
+            });
+            routingLayer.addLayer(routingGEOdata);
+            console.log(routingLine);
+          });
+      }
+
+      // routing(106.6577752,10.7715454,106.6691782,10.7679665);
     </script>
   </body>
 </html>
+
+
 
 `;
 export default map;

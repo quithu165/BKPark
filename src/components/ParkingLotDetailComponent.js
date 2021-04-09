@@ -31,6 +31,7 @@ class ParkingLotDetailComponent extends Component {
     userID: this.props.route.params.userID,
     parkingLotID: this.props.route.params._id,
     spinner: false,
+    bookingAvalable: true,
   };
 
   componentDidMount() {
@@ -59,7 +60,7 @@ class ParkingLotDetailComponent extends Component {
     console.log(this.state.tableData);
   }
   toggleShowParkingSLot() {
-    console.log(this.state.showBooking);
+    // console.log(this.state.showBooking);
     this.setState({showBooking: !this.state.showBooking});
   }
   toggleShowNoticeFailed() {
@@ -95,13 +96,32 @@ class ParkingLotDetailComponent extends Component {
     this.toggleShowParkingSLot();
     // this.createAreaList();
   }
-
+  checkBookingAvailable(area) {
+    axios.get('http://gogito.duckdns.org:3002/users/' + this.state.userID).then(
+      response => {
+        console.log(JSON.stringify(response.data.currentBooking));
+        curBooking = response.data.currentBooking;
+        this.setState({spinner: false});
+        if (
+          response.data.currentBooking === undefined ||
+          response.data.currentBooking === ''
+        ) {
+          // this.setState({bookingAvalable: false});
+          this.booking(area);
+        } else {
+          this.setState({spinner: false});
+          this.toggleShowNoticeFailed();
+          // this.setState({bookingAvalable: true});
+        }
+      },
+      error => {
+        console.log(error.response.data);
+      },
+    );
+    // console.log(this.state.bookingAvalable);
+    // return this.state.bookingAvalable;
+  }
   booking(area) {
-    // console.log(this.state.userID);
-    // console.log(this.state.parkingLotID);
-    // console.log(area);
-    this.setState({spinner: true});
-
     axios
       .post('http://gogito.duckdns.org:3002/bookings', {
         userID: this.state.userID,
@@ -109,14 +129,13 @@ class ParkingLotDetailComponent extends Component {
         areaName: area,
       })
       .then(
-        (response) => {
+        response => {
           console.log(JSON.stringify(response.data));
           this.setState({spinner: false});
-          this.renderSuccessBooking();
           this.toggleShowNoticeSuccess();
         },
-        (error) => {
-          console.log(error.response);
+        error => {
+          console.log(error.response.data.message);
           this.setState({spinner: false});
           this.toggleShowNoticeFailed();
         },
@@ -125,7 +144,7 @@ class ParkingLotDetailComponent extends Component {
   renderItem = ({item}) => (
     <TouchableOpacity
       style={styles.parkingLotItemWrapper}
-      onPress={() => this.booking(item.name)}>
+      onPress={() => this.checkBookingAvailable(item.name)}>
       <View style={styles.parkingLotItemNameWrapper}>
         <View>
           <Text>{item.name}</Text>
@@ -233,7 +252,7 @@ class ParkingLotDetailComponent extends Component {
               <FlatList
                 data={this.state.areaList}
                 renderItem={this.renderItem}
-                keyExtractor={(item) => item.name}
+                keyExtractor={item => item.name}
                 extraData={this.state}
               />
             </Overlay>
@@ -248,22 +267,23 @@ class ParkingLotDetailComponent extends Component {
                 <Image
                   style={styles.noticeIcon}
                   source={require('./../../assets/cancel.png')}></Image>
-                  <Text style={styles.noticeTxt}>Failed</Text>
+                <Text style={styles.noticeTxt}>Failed</Text>
               </View>
 
-              
               <View style={styles.btnNotice}>
-                <TouchableOpacity style={styles.btn}
-                  onPress={() => this.toggleShowNoticeFailed}>
-                <Image
-                  style={styles.noticeIconBtn}
-                  source={require('./../../assets/return.png')}></Image>
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={() => this.toggleShowNoticeFailed()}>
+                  <Image
+                    style={styles.noticeIconBtn}
+                    source={require('./../../assets/return.png')}></Image>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.btn}
-                onPress={()=>this.props.navigation.navigate('home')}>
-                <Image
-                  style={styles.noticeIconBtn}
-                  source={require('./../../assets/home.png')}></Image>
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={() => this.props.navigation.navigate('home')}>
+                  <Image
+                    style={styles.noticeIconBtn}
+                    source={require('./../../assets/home.png')}></Image>
                 </TouchableOpacity>
               </View>
             </Overlay>

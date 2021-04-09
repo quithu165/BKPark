@@ -15,6 +15,8 @@ import map from '../common/map';
 import styles from '../styles/HomeStyles';
 import ModalDropdown from 'react-native-modal-dropdown';
 import {Overlay} from 'react-native-elements';
+import Geolocation from '@react-native-community/geolocation';
+import {call} from 'react-native-reanimated';
 const axios = require('axios');
 
 class HomeComponent extends Component {
@@ -22,6 +24,7 @@ class HomeComponent extends Component {
     showListParkingLot: false,
     parkingLocation: {},
     parkingList: [],
+    searchingResult: [],
     testImg: require('../../assets/locUser.png'),
     parkingItem: {
       title: '',
@@ -32,19 +35,32 @@ class HomeComponent extends Component {
     userOption: [],
     userStatus: '',
     checkingLogin: false,
+    curLocation: {
+      latitude: 10.77057,
+      longitude: 106.672547,
+    },
+    desLocation: {
+      latitude: 10.77057,
+      longitude: 106.672547,
+    },
+    curBooking: null,
+    userID: null,
+    searchingKeyWord: '',
+    searchResultApperance: false,
   };
 
   componentDidMount() {
     BackHandler.addEventListener('hardwareBackPress', this.handleBackButton);
-    // this.getCurLocation();
+    // this.getParkingLotData();
     this.checkUserAuthentificate();
-    console.log('Rendered');
-    this.interval = setInterval(() => this.getCurLocation(), 5000);
+    console.log('INIT: RENDER');
+    // this.getParkingLotData();
+    this.interval = setInterval(() => this.getParkingLotData(this.state.curLocation.latitude, this.state.curLocation.longitude), 5000);
   }
 
   componentWillUnmount() {
     BackHandler.removeEventListener('hardwareBackPress', this.handleBackButton);
-    console.log('DEL');
+    console.log('FINISH: UNmount');
     clearInterval(this.interval);
   }
 
@@ -65,7 +81,9 @@ class HomeComponent extends Component {
     return true;
   }
 
-  //HANDLE DROPDOWN CONTENT
+  //*****************************************
+  //       HANDLE DROPDOWN CONTENT
+  //*****************************************
   handleDropdownSelect(userOption) {
     if (this.state.userStatus == '0') {
       switch (userOption) {
@@ -144,9 +162,17 @@ class HomeComponent extends Component {
       this.setState({checkingLogin: false});
     }
   }
-  //DRAW MARKER ON MAP
-  markParkingLots(lat, long, type, id) {
-    // console.log(JSON.stringify(id));
+  //*****************************************
+  //               DRAW MARKER
+  //*****************************************
+  setViewOnMap(latitude, longitude){
+    var latitudeTxt = JSON.stringify(latitude);
+    var longtitudeTxt = JSON.stringify(longitude);
+    this.Map_Ref.injectJavaScript(`
+      mymap.setView([${latitudeTxt}, ${longtitudeTxt}]);
+    `);
+  }
+  markLocationBaseCoordinates(lat, long, type, id) {
     var idTxT = JSON.stringify(id);
     this.Map_Ref.injectJavaScript(`
       markLocation(${lat}, ${long}, ${type}, ${idTxT})
@@ -162,7 +188,7 @@ class HomeComponent extends Component {
       // console.log( parkingArray[i]._id);
       switch (this.converStatus2Level(parkingArray[i].status)) {
         case 'Full':
-          this.markParkingLots(
+          this.markLocationBaseCoordinates(
             parkingArray[i].coordinate.longitude,
             parkingArray[i].coordinate.latitude,
             1,
@@ -170,7 +196,7 @@ class HomeComponent extends Component {
           );
           break;
         case 'Normal':
-          this.markParkingLots(
+          this.markLocationBaseCoordinates(
             parkingArray[i].coordinate.longitude,
             parkingArray[i].coordinate.latitude,
             2,
@@ -178,7 +204,7 @@ class HomeComponent extends Component {
           );
           break;
         case 'Empty':
-          this.markParkingLots(
+          this.markLocationBaseCoordinates(
             parkingArray[i].coordinate.longitude,
             parkingArray[i].coordinate.latitude,
             3,
@@ -190,23 +216,59 @@ class HomeComponent extends Component {
       }
     }
   }
+  saveCurLocation(data) {
+    // console.log(data);
+    this.setState({
+      curLocation: {
+        latitude: data.coords.latitude,
+        longitude: data.coords.longitude,
+      },
+    });
+    console.log('CURRENT LOCATION:' + this.state.curLocation);
+  }
   getCurLocation() {
-    //get geolocation
-    this.markParkingLots(10.77057, 106.672547, 4, 'test');
+    Geolocation.getCurrentPosition(
+      data => this.saveCurLocation(data),
+      error => console.log('ERROR: LOCATION ERROR'),
+      {enableHighAccuracy: true, timeout: 200000, maximumAge: 1000},
+    );
+    // console.log(this.state.curLocation, "HERE");
+  }
+
+  markCurLocation() {
+    // console.log(this.state.curLocation.latitude);
+    var latitudeTxt = JSON.stringify(this.state.curLocation.latitude);
+    var longtitudeTxt = JSON.stringify(this.state.curLocation.longitude);
     this.Map_Ref.injectJavaScript(`
-      mymap.setView([10.77057, 106.672547], 15);
+      mymap.setView([${latitudeTxt}, ${longtitudeTxt}]);
     `);
+    this.getParkingLotData(this.state.curLocation.latitude, this.state.curLocation.longitude);
+  }
+  getParkingLotData(latitude, longitude) {
+    this.getCurLocation();
+    this.setState({
+      userID:
+        this.props.route.params === undefined
+          ? ''
+          : this.props.route.params._id,
+    });
+    this.markLocationBaseCoordinates(
+      this.state.curLocation.latitude,
+      this.state.curLocation.longitude,
+      4,
+      'test',
+    );
     axios
       .post('http://gogito.duckdns.org:3002/cal_coor', {
         current: {
-          latitude: '106.672547',
-          longitude: '10.77057',
+          latitude: longitude,
+          longitude: latitude,
         },
         radius: '0.7',
       })
       .then(
         response => {
-          // console.log(response);
+          console.log(response.data);
           var sizeOfResponse = JSON.stringify(response.data.resultArray.length);
           this.markParkingBaseLoc(response.data.resultArray, sizeOfResponse);
           this.createOverlayList(response.data.resultArray, sizeOfResponse);
@@ -216,7 +278,7 @@ class HomeComponent extends Component {
           this.setState({sizeofData: sizeOfResponse});
         },
         error => {
-          console.log(error.response);
+          console.log(error.response.data.message);
           // Alert.alert('Wrong username or password!');
         },
       );
@@ -247,6 +309,7 @@ class HomeComponent extends Component {
       <TouchableOpacity
         style={styles.parkingLotItemNameWrapper}
         onPress={() => {
+          // console.log(item);
           this.toggleShowParkingLot();
           this.props.navigation.navigate('parkingdetail', item);
         }}>
@@ -285,6 +348,7 @@ class HomeComponent extends Component {
         default:
           break;
       }
+      // console.log(this.props.route.params);
       parkingItem = {
         ...data[i],
         icon: iconRequire,
@@ -295,7 +359,7 @@ class HomeComponent extends Component {
             : '',
         // userID: "604a309f5ba27b60787054b8"
       };
-      console.log(parkingItem.userID);
+      // console.log('createOvelayList: USER ID:' + parkingItem.userID);
       // console.log(parkingItem);
       this.addParkingLotItem(parkingItem);
     }
@@ -303,13 +367,14 @@ class HomeComponent extends Component {
   }
   //*****************************************
   //                MAP TOUCHING
+  // FLOW: SEND PARKINGLOT ID FOR HTML --onTouch--> HTML send ID BACK --> GET DATA --> SEND DATA TO HTML
   //*****************************************
   showDetailPopup(id, name, status, price) {
     var idTxT = JSON.stringify(id);
     var nameTxT = JSON.stringify(name);
     var statusTxT = JSON.stringify(status);
     var priceTxT = JSON.stringify(price);
-
+    // console.log(idTxT, nameTxT, statusTxT, priceTxT);
     this.Map_Ref.injectJavaScript(`
       updateDetailPopup(${idTxT}, ${nameTxT}, ${statusTxT}, ${priceTxT})
     `);
@@ -318,7 +383,7 @@ class HomeComponent extends Component {
     var name;
     var status;
     var price = 1000000000;
-    console.log('Server run');
+    console.log('UPDATE: update status for parking lot');
     axios.get('http://www.gogito.duckdns.org:3002/parkinglots/' + id).then(
       response => {
         name = JSON.stringify(response.data.name);
@@ -332,17 +397,162 @@ class HomeComponent extends Component {
         this.showDetailPopup(id, name, status, price);
       },
       error => {
-        console.log(error.response);
+        console.log(error.response.data.message);
       },
     );
-    console.log(price);
+    // console.log(price);
   }
   onTouchParkingLotIcon(event) {
-    console.log(event.nativeEvent.data);
+    // console.log(event.nativeEvent.data);
     this.getDetailPopup(event.nativeEvent.data);
   }
-
-  //RENDER=======================================================================
+  //*****************************************
+  //                MAP ROUTING
+  // FLOW: GET BOOKING ID --> GET PARKING LOT ID --> ROUTING INTERVAL 15s
+  //*****************************************
+  routing(initLong, initLat, desLong, desLat) {
+    var initLatTxt = JSON.stringify(initLat);
+    var initLongTxt = JSON.stringify(initLong);
+    var desLatTxt = JSON.stringify(desLat);
+    var desLongTxt = JSON.stringify(desLong);
+    if (this.Map_Ref !== undefined) {
+      this.Map_Ref.injectJavaScript(`
+      routing(${initLong}, ${initLat}, ${desLong}, ${desLat})
+    `);
+    }
+  }
+  getParkingLotCoordinates(parkingLotID) {
+    console.log('getParkingLotCoordinates: ' + parkingLotID);
+    axios
+      .get('http://gogito.duckdns.org:3002/parkinglots/' + parkingLotID)
+      .then(
+        response => {
+          // console.log(JSON.stringify(response.data));
+          this.setState({
+            desLocation: {
+              latitude: response.data.coordinate.longitude,
+              longitude: response.data.coordinate.latitude,
+            },
+          });
+        },
+        error => {
+          console.log(error.response.data.message);
+        },
+      );
+    console.log(this.state.desLocation);
+    console.log(this.state.curLocation);
+    if (this.Map_Ref !== undefined) {
+      this.routing(
+        this.state.curLocation.longitude,
+        this.state.curLocation.latitude,
+        this.state.desLocation.longitude,
+        this.state.desLocation.latitude,
+      );
+      this.interval = setInterval(
+        () =>
+          this.routing(
+            this.state.curLocation.longitude,
+            this.state.curLocation.latitude,
+            this.state.desLocation.longitude,
+            this.state.desLocation.latitude,
+          ),
+        5000,
+      );
+    }
+  }
+  getCurrentBookingLotID(bookingID) {
+    console.log('getCurrentBookingLotID: ' + bookingID);
+    axios.get('http://gogito.duckdns.org:3002/bookings/' + bookingID).then(
+      response => {
+        // console.log(JSON.stringify(response.data));
+        this.getParkingLotCoordinates(response.data.parkinglotID);
+      },
+      error => {
+        console.log(error.response.data.message);
+      },
+    );
+  }
+  getCurrentBookingID(userID) {
+    console.log('getCurrentBookingID: ' + userID);
+    axios.get('http://gogito.duckdns.org:3002/users/' + userID).then(
+      response => {
+        // console.log(JSON.stringify(response.data));
+        this.getCurrentBookingLotID(response.data.currentBooking);
+      },
+      error => {
+        console.log(error.response.data.message);
+      },
+    );
+  }
+  //*****************************************
+  //                SEARCH ENGINE
+  // FLOW: GET KEYWORD --> REQUEST API and SOLVE --> OPEN OVERLAY RESULT
+  //*****************************************
+  addSearchingResultItem(item) {
+    this.setState({searchingResult: [...this.state.searchingResult, item]});
+  }
+  createNominatimResponseDataItem(response) {
+    this.toggleShowSearchResult();
+    this.setState({searchingResult: []});
+    for (var i = 0; i < response.length; i++) {
+      var searchingItem;
+      searchingItem = {
+        place_id: response[i].place_id,
+        coordinate:{
+          latitude: response[i].lat,
+          longitude: response[i].lon
+        },
+        name: response[i].display_name
+      }
+      this.addSearchingResultItem(searchingItem);
+    }
+    // console.log(this.state.searchingResult[1]);
+  }
+  callNominatimAPI(keyword) {
+    console.log(keyword);
+    axios
+      .get(
+        'https://nominatim.openstreetmap.org/search?q=' +
+          keyword +
+          '&format=json&polygon_geojson=1&addressdetails=1',
+      )
+      .then(
+        response => {
+          // console.log(JSON.stringify(response.data[1].boundingbox));
+          this.createNominatimResponseDataItem(response.data);
+        },
+        error => {
+          console.log(error.response.data.message);
+        },
+      );
+  }
+  getKeyWord() {
+    var handledKeyword = JSON.stringify(this.state.searchingKeyWord).replace(
+      / /g,
+      '+',
+    );
+    this.callNominatimAPI(handledKeyword);
+  }
+  toggleShowSearchResult() {
+    this.setState({searchResultApperance: !this.state.searchResultApperance});
+  }
+  renderSearchingResultItem= ({item}) =>(
+    <View style={styles.parkingLotItemWrapper}>
+      <TouchableOpacity
+        style={styles.parkingLotItemNameWrapper}
+        onPress={() => {
+          console.log(item);
+          this.toggleShowSearchResult();
+          this.setViewOnMap(item.coordinate.latitude, item.coordinate.longitude);
+          this.getParkingLotData(item.coordinate.latitude, item.coordinate.longitude);
+        }}>
+        <View>
+          <Text>{item.name}</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  )
+  //RENDER=========================================================================================================
   render() {
     return (
       <View style={styles.container}>
@@ -378,14 +588,13 @@ class HomeComponent extends Component {
                     style={styles.searchInput}
                     placeholder="Search..."
                     placeholderTextColor="#0D0D0F"
-                    // onChangeText={this.handleLName}
+                    onChangeText={text =>
+                      this.setState({searchingKeyWord: text})
+                    }
                   />
                   <TouchableOpacity
                     style={styles.searchIconArea}
-                    //   onPress={() => {
-
-                    //   }}
-                  >
+                    onPress={() => this.getKeyWord()}>
                     <Image
                       style={styles.searchIcon}
                       source={require('../../assets/search-icon.png')}></Image>
@@ -397,9 +606,19 @@ class HomeComponent extends Component {
             </View>
           </View>
           <TouchableOpacity
+            style={styles.routingIcon}
+            onPress={() => {
+              this.getCurrentBookingID(this.state.userID);
+            }}>
+            <Image
+              style={styles.geolocationIconSize}
+              source={require('../../assets/routing.png')}></Image>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.geolocationIcon}
             onPress={() => {
-              // console.log('mark');
+              this.markCurLocation();
             }}>
             <Image
               style={styles.geolocationIconSize}
@@ -409,7 +628,7 @@ class HomeComponent extends Component {
             fullScreen="true"
             windowBackgroundColor="#EF2440"
             overlayBackgroundColor="red"
-            overlayStyle={styles.showParkingDetailOverlay}
+            overlayStyle={styles.showDataOverlay}
             isVisible={this.state.showListParkingLot}
             onBackdropPress={() => this.toggleShowParkingLot()}>
             <Text style={styles.titleList}> PARKING LIST</Text>
@@ -419,6 +638,22 @@ class HomeComponent extends Component {
               keyExtractor={item => item._id}
             />
           </Overlay>
+
+          <Overlay
+            fullScreen="true"
+            windowBackgroundColor="#EF2440"
+            overlayBackgroundColor="red"
+            overlayStyle={styles.showDataOverlay}
+            isVisible={this.state.searchResultApperance}
+            onBackdropPress={() => this.toggleShowSearchResult()}>
+            <Text style={styles.titleList}> Result Found</Text>
+            <FlatList
+              data={this.state.searchingResult}
+              renderItem={this.renderSearchingResultItem}
+              keyExtractor={item => item.place_id}
+            />
+          </Overlay>
+
           {this.state.checkingLogin && (
             <TouchableOpacity
               style={styles.viewParkingLot}

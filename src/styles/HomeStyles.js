@@ -114,6 +114,12 @@ export default {
     right: 30,
     top: '80%',
   },
+  routingIcon: {
+    position: 'absolute',
+    alignSelf: 'flex-end',
+    right: 30,
+    top: '65%',
+  },
   geolocationIconSize: {
     width: 55,
     height: 55,
@@ -133,7 +139,7 @@ export default {
     fontSize: 18,
     color: 'white',
   },
-  showParkingDetailOverlay:{
+  showDataOverlay:{
     width:"80%",
     height: "80%",
     backgroundColor: '#F9F0F1',
