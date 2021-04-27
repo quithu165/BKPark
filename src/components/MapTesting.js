@@ -4,21 +4,25 @@ import styles from '../styles/MapStyles';
 import map from '../common/map';
 import {Text, View, TouchableOpacity} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
-
+var test;
 class MapTesting extends Component {
   state = {
     location: null,
+    test: null
   };
-  findCoordinates = () => {
-    Geolocation.getCurrentPosition(data => console.log(data));
-    if (this.state.location === null) console.log("Null");
-  };
+  componentDidMount(){
+    test = setInterval(() => console.log(this.props.route.params), 5000);
+  }
+  resetInterval(){
+    // clearInterval(test);
+    this.props.navigation.setParams({test: '654321'});
+    console.log('delete interval');
+  }
   render() {
     return (
       <View style={styles.container}>
-        <TouchableOpacity onPress={this.findCoordinates}>
-          <Text style={styles.welcome}>Find My Coords?</Text>
-          <Text>Location: Null</Text>
+        <TouchableOpacity onPress={this.resetInterval.bind(this)}>
+          <Text style={styles.welcome}>Delete internal</Text>
         </TouchableOpacity>
       </View>
     );

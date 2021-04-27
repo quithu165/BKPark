@@ -18,7 +18,9 @@ import {Overlay} from 'react-native-elements';
 import Geolocation from '@react-native-community/geolocation';
 import {call} from 'react-native-reanimated';
 const axios = require('axios');
-
+var routingInterval;
+var userCheckingInterval;
+var getlocationInterval;
 class HomeComponent extends Component {
   state = {
     showListParkingLot: false,
@@ -35,6 +37,7 @@ class HomeComponent extends Component {
     userOption: [],
     userStatus: '',
     checkingLogin: false,
+    checkBooking: false,
     curLocation: {
       latitude: 10.77057,
       longitude: 106.672547,
@@ -43,7 +46,7 @@ class HomeComponent extends Component {
       latitude: 10.77057,
       longitude: 106.672547,
     },
-    curBooking: null,
+    // curBooking: null,
     userID: null,
     searchingKeyWord: '',
     searchResultApperance: false,
@@ -55,13 +58,25 @@ class HomeComponent extends Component {
     this.checkUserAuthentificate();
     console.log('INIT: RENDER');
     // this.getParkingLotData();
-    this.interval = setInterval(() => this.getParkingLotData(this.state.curLocation.latitude, this.state.curLocation.longitude), 5000);
+    getlocationInterval = setInterval(
+      () =>
+        this.getParkingLotData(
+          this.state.curLocation.latitude,
+          this.state.curLocation.longitude,
+        ),
+      5000,
+    );
+    userCheckingInterval = setInterval(
+      () => this.checkUserAuthentificate(),
+      2000,
+    );
   }
 
   componentWillUnmount() {
     BackHandler.removeEventListener('hardwareBackPress', this.handleBackButton);
     console.log('FINISH: UNmount');
-    clearInterval(this.interval);
+    clearInterval(getlocationInterval);
+    clearInterval(userCheckingInterval);
   }
 
   handleBackButton() {
@@ -81,6 +96,25 @@ class HomeComponent extends Component {
     return true;
   }
 
+  updateCurrentUserData() {
+    axios.get('http://gogito.duckdns.org:3002/users/' + this.state.userID).then(
+      response => {
+        // console.log(JSON.stringify(response.data));
+        this.props.navigation.setParams(response.data);
+        // console.log(this.props.route.params);
+        // this.setState({checkBooking: false});
+        // this.setState({checkingLogin: true});
+        console.log('THIS:' + this.props.route.params);
+        clearInterval(userCheckingInterval);
+        // userCheckingInterval = setInterval(() => this.checkUserAuthentificate(response.data), 2000);
+      },
+      error => {
+        console.log(error.response);
+      },
+    );
+
+    // console.log(this.props.route.params);
+  }
   //*****************************************
   //       HANDLE DROPDOWN CONTENT
   //*****************************************
@@ -95,7 +129,7 @@ class HomeComponent extends Component {
           this.props.navigation.navigate('signupuser');
           break;
         case 2:
-          this.props.navigation.navigate('map');
+          this.props.navigation.navigate('map', {test: '123456'});
         default:
       }
     } else {
@@ -146,6 +180,7 @@ class HomeComponent extends Component {
     });
     this.setState({userStatus: ''});
     if (this.props.route.params !== undefined) {
+      var data = this.props.route.params;
       this.setState({
         userOption: [
           'User Infomation',
@@ -154,9 +189,32 @@ class HomeComponent extends Component {
           'Map Testing',
         ],
       });
-      this.setState({userStatus: '1'});
-      this.setState({checkingLogin: true});
+
+      axios
+        .get('http://gogito.duckdns.org:3002/users/' + this.state.userID)
+        .then(
+          response => {
+            this.setState({userStatus: '1'});
+            data = response.data;
+            if (
+              data.currentBooking !== undefined &&
+              data.currentBooking !== '' &&
+              data.currentBooking != null
+            ) {
+              this.setState({checkBooking: true});
+              this.setState({checkingLogin: false});
+            } else {
+              this.setState({checkingLogin: true});
+              this.setState({checkBooking: false});
+            }
+          },
+          error => {
+            console.log(error.response.data.message);
+          },
+        );
+      // console.log(data);
     } else {
+      this.setState({checkBooking: false});
       this.setState({userStatus: 0});
       this.setState({userOption: ['Login', 'Signup', 'Map Testing']});
       this.setState({checkingLogin: false});
@@ -165,7 +223,7 @@ class HomeComponent extends Component {
   //*****************************************
   //               DRAW MARKER
   //*****************************************
-  setViewOnMap(latitude, longitude){
+  setViewOnMap(latitude, longitude) {
     var latitudeTxt = JSON.stringify(latitude);
     var longtitudeTxt = JSON.stringify(longitude);
     this.Map_Ref.injectJavaScript(`
@@ -224,13 +282,18 @@ class HomeComponent extends Component {
         longitude: data.coords.longitude,
       },
     });
-    console.log('CURRENT LOCATION:' + this.state.curLocation);
+    console.log(
+      'CURRENT LOCATION:' +
+        this.state.curLocation.latitude +
+        ' ' +
+        this.state.curLocation.longitude,
+    );
   }
   getCurLocation() {
     Geolocation.getCurrentPosition(
       data => this.saveCurLocation(data),
       error => console.log('ERROR: LOCATION ERROR'),
-      {enableHighAccuracy: true, timeout: 200000, maximumAge: 1000},
+      {enableHighAccuracy: false, timeout: 10000, maximumAge: 10000},
     );
     // console.log(this.state.curLocation, "HERE");
   }
@@ -242,7 +305,10 @@ class HomeComponent extends Component {
     this.Map_Ref.injectJavaScript(`
       mymap.setView([${latitudeTxt}, ${longtitudeTxt}]);
     `);
-    this.getParkingLotData(this.state.curLocation.latitude, this.state.curLocation.longitude);
+    this.getParkingLotData(
+      this.state.curLocation.latitude,
+      this.state.curLocation.longitude,
+    );
   }
   getParkingLotData(latitude, longitude) {
     this.getCurLocation();
@@ -268,7 +334,7 @@ class HomeComponent extends Component {
       })
       .then(
         response => {
-          console.log(response.data);
+          // console.log(response.data);
           var sizeOfResponse = JSON.stringify(response.data.resultArray.length);
           this.markParkingBaseLoc(response.data.resultArray, sizeOfResponse);
           this.createOverlayList(response.data.resultArray, sizeOfResponse);
@@ -410,6 +476,11 @@ class HomeComponent extends Component {
   //                MAP ROUTING
   // FLOW: GET BOOKING ID --> GET PARKING LOT ID --> ROUTING INTERVAL 15s
   //*****************************************
+  endRouting() {
+    this.Map_Ref.injectJavaScript(`
+      routingLayer.removeLayer(routingGEOdata);
+    `);
+  }
   routing(initLong, initLat, desLong, desLat) {
     var initLatTxt = JSON.stringify(initLat);
     var initLongTxt = JSON.stringify(initLong);
@@ -448,7 +519,7 @@ class HomeComponent extends Component {
         this.state.desLocation.longitude,
         this.state.desLocation.latitude,
       );
-      this.interval = setInterval(
+      routingInterval = setInterval(
         () =>
           this.routing(
             this.state.curLocation.longitude,
@@ -458,6 +529,7 @@ class HomeComponent extends Component {
           ),
         5000,
       );
+      // console.log(routingInterval);
     }
   }
   getCurrentBookingLotID(bookingID) {
@@ -472,12 +544,20 @@ class HomeComponent extends Component {
       },
     );
   }
-  getCurrentBookingID(userID) {
+  getCurrentBookingID(userID, option) {
     console.log('getCurrentBookingID: ' + userID);
     axios.get('http://gogito.duckdns.org:3002/users/' + userID).then(
       response => {
-        // console.log(JSON.stringify(response.data));
-        this.getCurrentBookingLotID(response.data.currentBooking);
+        switch (option) {
+          case 1:
+            this.getCurrentBookingLotID(response.data.currentBooking);
+            break;
+          case 2:
+            this.handleCancelBookingPress(response.data.currentBooking);
+            break;
+          default:
+            break;
+        }
       },
       error => {
         console.log(error.response.data.message);
@@ -491,19 +571,23 @@ class HomeComponent extends Component {
   addSearchingResultItem(item) {
     this.setState({searchingResult: [...this.state.searchingResult, item]});
   }
+  clearSearchTextInput() {
+    this.search_box.clear();
+  }
   createNominatimResponseDataItem(response) {
     this.toggleShowSearchResult();
+    this.clearSearchTextInput();
     this.setState({searchingResult: []});
     for (var i = 0; i < response.length; i++) {
       var searchingItem;
       searchingItem = {
         place_id: response[i].place_id,
-        coordinate:{
+        coordinate: {
           latitude: response[i].lat,
-          longitude: response[i].lon
+          longitude: response[i].lon,
         },
-        name: response[i].display_name
-      }
+        name: response[i].display_name,
+      };
       this.addSearchingResultItem(searchingItem);
     }
     // console.log(this.state.searchingResult[1]);
@@ -536,22 +620,60 @@ class HomeComponent extends Component {
   toggleShowSearchResult() {
     this.setState({searchResultApperance: !this.state.searchResultApperance});
   }
-  renderSearchingResultItem= ({item}) =>(
+  renderSearchingResultItem = ({item}) => (
     <View style={styles.parkingLotItemWrapper}>
       <TouchableOpacity
         style={styles.parkingLotItemNameWrapper}
         onPress={() => {
           console.log(item);
           this.toggleShowSearchResult();
-          this.setViewOnMap(item.coordinate.latitude, item.coordinate.longitude);
-          this.getParkingLotData(item.coordinate.latitude, item.coordinate.longitude);
+          this.setViewOnMap(
+            item.coordinate.latitude,
+            item.coordinate.longitude,
+          );
+          this.getParkingLotData(
+            item.coordinate.latitude,
+            item.coordinate.longitude,
+          );
         }}>
         <View>
           <Text>{item.name}</Text>
         </View>
       </TouchableOpacity>
     </View>
-  )
+  );
+  //*****************************************
+  //                HANDLE CANCEL BOOKING
+  // *******************************************
+  cancelCurrentBooking(bookingID) {
+    // console.log(bookingID);
+    axios.delete('http://gogito.duckdns.org:3002/bookings/' + bookingID).then(
+      response => {
+        console.log(JSON.stringify(response.data));
+      },
+      error => {
+        console.log(error.response.data.message);
+      },
+    );
+    this.endRouting();
+    clearInterval(routingInterval);
+    this.checkUserAuthentificate;
+  }
+  handleCancelBookingPress(bookingID) {
+    Alert.alert(
+      'Cancel Booking',
+      'Do you want to cancel your booking?',
+      [
+        {
+          text: 'No',
+          onPress: () => console.log('Cancel delete Booking'),
+          style: 'cancel',
+        },
+        {text: 'Yes', onPress: () => this.cancelCurrentBooking(bookingID)},
+      ],
+      {cancelable: false},
+    );
+  }
   //RENDER=========================================================================================================
   render() {
     return (
@@ -588,6 +710,8 @@ class HomeComponent extends Component {
                     style={styles.searchInput}
                     placeholder="Search..."
                     placeholderTextColor="#0D0D0F"
+                    ref={component => (this.search_box = component)}
+                    onSubmitEditing={() => this.getKeyWord()}
                     onChangeText={text =>
                       this.setState({searchingKeyWord: text})
                     }
@@ -605,16 +729,26 @@ class HomeComponent extends Component {
               </View>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.routingIcon}
-            onPress={() => {
-              this.getCurrentBookingID(this.state.userID);
-            }}>
-            <Image
-              style={styles.geolocationIconSize}
-              source={require('../../assets/routing.png')}></Image>
-          </TouchableOpacity>
-
+          {this.state.checkBooking && (
+            <TouchableOpacity
+              style={styles.routingIcon}
+              onPress={() => {
+                this.getCurrentBookingID(this.state.userID, 1);
+              }}>
+              <Image
+                style={styles.geolocationIconSize}
+                source={require('../../assets/routing.png')}></Image>
+            </TouchableOpacity>
+          )}
+          {this.state.checkBooking && (
+            <TouchableOpacity
+              style={styles.cancelBooking}
+              onPress={() => {
+                this.getCurrentBookingID(this.state.userID, 2);
+              }}>
+              <Text style={styles.showListButton}>Cancel</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.geolocationIcon}
             onPress={() => {

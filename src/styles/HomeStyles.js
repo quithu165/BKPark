@@ -135,67 +135,74 @@ export default {
     top: '85%',
     right: '30%',
   },
+  cancelBooking: {
+      position: 'absolute',
+      width: 150,
+      backgroundColor: '#F12809',
+      borderRadius: 25,
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 45,
+      top: '85%',
+  },
   showListButton: {
     fontSize: 18,
     color: 'white',
   },
-  showDataOverlay:{
-    width:"80%",
-    height: "80%",
+  showDataOverlay: {
+    width: '80%',
+    height: '80%',
     backgroundColor: '#F9F0F1',
     borderRadius: 25,
     position: 'absolute',
   },
-  titleList:{
+  titleList: {
     fontSize: 20,
-    marginBottom: 15
+    marginBottom: 15,
   },
-  parkingLotItemWrapper:{
+  parkingLotItemWrapper: {
     height: 50,
-    flexDirection: "row",
+    flexDirection: 'row',
     flex: 1,
     marginBottom: 10,
-    backgroundColor: "#F9E792",
+    backgroundColor: '#F9E792',
     borderRadius: 10,
   },
-  parkingLotItemNameWrapper:{
+  parkingLotItemNameWrapper: {
     flex: 8,
     height: 50,
-    // 
+    //
     marginRight: 10,
     marginLeft: 5,
-    justifyContent:'center',
+    justifyContent: 'center',
     // alignItems: 'center'
-    
   },
-  parkingLotItemStatusWrapper:{
+  parkingLotItemStatusWrapper: {
     flex: 2,
     height: 50,
-    justifyContent:'center',
+    justifyContent: 'center',
     marginBottom: 10,
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  parkingLotNameStyle:{
-
-  },
-  parkingLotItemIconWrapper:{
+  parkingLotNameStyle: {},
+  parkingLotItemIconWrapper: {
     flex: 2,
     height: 50,
-    justifyContent:'center',
+    justifyContent: 'center',
     marginBottom: 10,
     alignItems: 'center',
     marginTop: 5,
   },
-  parkingLotItemIcon:{
+  parkingLotItemIcon: {
     flex: 3,
     width: 25,
     height: 25,
   },
-  parkingLotItemDistance:{
+  parkingLotItemDistance: {
     flex: 2,
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  parkingLotItemDistanceText:{
-    fontSize: 10
-  }
+  parkingLotItemDistanceText: {
+    fontSize: 10,
+  },
 };
