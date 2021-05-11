@@ -10,36 +10,15 @@ import {
   Alert,
 } from 'react-native';
 import styles from '../styles/SignupUserStyles'
-class SignupUserComponent extends Component {
+import SignupUserModel from '../model/SignupUserModel'
+class SignupUserComponent extends SignupUserModel {
   state = {
     cfPass: '',
     username: '',
     password: '',
     showError: false,
   };
-  handlecfPass = (text) => {
-    this.setState({cfPass: text});
-  };
-  handleUsername = (text) => {
-    this.setState({username: text});
-  };
-  handlePassword = (text) => {
-    this.setState({password: text});
-  };
-
-  nextToRegister = (username, pass, cfPass) => {
-    if (pass !== cfPass) {
-      this.setState({showError: true});
-    } else {
-      // console.log(username);
-      // console.log(pass);
-      this.props.navigation.navigate('signupinfo',{
-        username: username,
-        password: pass
-      });
-      // this.props.navigation.navigate('signupinfo');
-    }
-  };
+  
   render() {
     return (
       <ImageBackground

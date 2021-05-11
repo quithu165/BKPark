@@ -7,30 +7,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import styles from '../styles/AddPlateStyles'
-const axios = require('axios');
-class AddPlateComponent extends Component {
+import AddPlateModel from '../model/AddPlateModel'
+
+class AddPlateComponent extends AddPlateModel {
   state = {
     plateNumber: '',
-  };
-  handlePlate = (text) => {
-    this.setState({plateNumber: text});
-  };
-  registerNewPlate(plateNumber){
-      console.log(plateNumber);
-      console.log(this.props.route.params);
-    axios
-    .put('http://gogito.duckdns.org:3002/users/' + this.props.route.params, {
-      infoArray:{
-          carplateNumber: plateNumber
-      }
-    })
-    .then((response) => {
-      console.log(JSON.stringify(response.data));
-    //   this.props.navigation.navigate('login');
-    })
-    .catch((error) => {
-      console.log(error.response.message);
-    });
   };
   render() {
     return (

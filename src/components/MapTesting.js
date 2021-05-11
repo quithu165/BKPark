@@ -3,9 +3,10 @@ import WebView from 'react-native-webview';
 import styles from '../styles/MapStyles';
 import map from '../common/map';
 import {Text, View, TouchableOpacity} from 'react-native';
+import TestBase from '../model/TestBase'
 import Geolocation from '@react-native-community/geolocation';
 var test;
-class MapTesting extends Component {
+class MapTesting extends TestBase {
   state = {
     location: null,
     test: null
@@ -13,11 +14,7 @@ class MapTesting extends Component {
   componentDidMount(){
     test = setInterval(() => console.log(this.props.route.params), 5000);
   }
-  resetInterval(){
-    // clearInterval(test);
-    this.props.navigation.setParams({test: '654321'});
-    console.log('delete interval');
-  }
+  
   render() {
     return (
       <View style={styles.container}>

@@ -10,9 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import styles from '../styles/LoginStyles';
-const axios = require('axios');
+import LoginModel from '../model/LoginModel'
 
-class LoginComponent extends Component {
+class LoginComponent extends LoginModel {
   
   constructor(props) {
     super(props);
@@ -23,36 +23,7 @@ class LoginComponent extends Component {
     username: '',
     password: '',
   };
-  handleUsername = (text) => {
-    this.setState({username: text});
-  };
-  handlePassword = (text) => {
-    this.setState({password: text});
-  };
-  login = (name, pass) => {
-    //alert('email: ' + email + ' password: ' + pass)
-    // this.props.navigation.navigate('map');
-    // console.log(this.props.route);
-    if (name == '') Alert.alert('Username can be empty');
-    else if (pass == '') Alert.alert('Password can be empty');
-    else {
-      axios
-        .post('http://gogito.duckdns.org:3002/login', {
-          username: name,
-          password: pass,
-        })
-        .then(
-          (response) => {
-            console.log(JSON.stringify(response.data._id));
-            this.props.navigation.navigate('home', response.data);
-          },
-          (error) => {
-            console.log('error');
-            Alert.alert('Wrong username or password!');
-          },
-        );
-    }
-  };
+  
 
   render() {
     return (

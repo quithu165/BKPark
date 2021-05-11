@@ -16,7 +16,7 @@ import styles from '../styles/HomeStyles';
 import ModalDropdown from 'react-native-modal-dropdown';
 import {Overlay} from 'react-native-elements';
 import Geolocation from '@react-native-community/geolocation';
-import {call} from 'react-native-reanimated';
+import Spinner from 'react-native-loading-spinner-overlay';
 const axios = require('axios');
 var routingInterval;
 var userCheckingInterval;
@@ -50,6 +50,7 @@ class HomeComponent extends Component {
     userID: null,
     searchingKeyWord: '',
     searchResultApperance: false,
+    spinner: true,
   };
 
   componentDidMount() {
@@ -112,8 +113,6 @@ class HomeComponent extends Component {
         console.log(error.response);
       },
     );
-
-    // console.log(this.props.route.params);
   }
   //*****************************************
   //       HANDLE DROPDOWN CONTENT
@@ -235,6 +234,9 @@ class HomeComponent extends Component {
     this.Map_Ref.injectJavaScript(`
       markLocation(${lat}, ${long}, ${type}, ${idTxT})
     `);
+    if (this.state.spinner){
+      this.setState({spinner: false});
+    }
   }
   converStatus2Level(status) {
     if (status >= 0.5) return 'Empty';
@@ -322,8 +324,10 @@ class HomeComponent extends Component {
       this.state.curLocation.latitude,
       this.state.curLocation.longitude,
       4,
-      'test',
+      'test'
     );
+
+
     axios
       .post('http://gogito.duckdns.org:3002/cal_coor', {
         current: {
@@ -334,7 +338,7 @@ class HomeComponent extends Component {
       })
       .then(
         response => {
-          // console.log(response.data);
+          // console.log(response.data.resultArray[1]);
           var sizeOfResponse = JSON.stringify(response.data.resultArray.length);
           this.markParkingBaseLoc(response.data.resultArray, sizeOfResponse);
           this.createOverlayList(response.data.resultArray, sizeOfResponse);
@@ -384,7 +388,7 @@ class HomeComponent extends Component {
         </View>
       </TouchableOpacity>
       <View style={styles.parkingLotItemStatusWrapper}>
-        <Text>{Math.round(item.status * 100) + '%'}</Text>
+        <Text>{item.freeSlot + '/' + item.totalSlot}</Text>
       </View>
       <View style={styles.parkingLotItemIconWrapper}>
         <Image style={styles.parkingLotItemIcon} source={item.icon}></Image>
@@ -400,6 +404,8 @@ class HomeComponent extends Component {
     for (var i = 0; i < size; i++) {
       var parkingItem;
       var iconRequire;
+      var freeslot = 0;
+      var totalslot = 0;
       // console.log(this.props.route.params._id);
       switch (this.converStatus2Level(data[i].status)) {
         case 'Full':
@@ -414,11 +420,19 @@ class HomeComponent extends Component {
         default:
           break;
       }
+      for (var j = 0; j < data[i].area.length; j++){
+        totalslot = data[i].area[j].freeslot + data[i].area[j].fullslot + totalslot;
+        freeslot = data[i].area[j].freeslot + freeslot;
+        // console.log(data[i].area[j]);
+      }
+      // console.log(freeslot + '/' + totalslot);
       // console.log(this.props.route.params);
       parkingItem = {
         ...data[i],
         icon: iconRequire,
         distance: '5km',
+        freeSlot: freeslot,
+        totalSlot: totalslot,
         userID:
           this.props.route.params !== undefined
             ? this.props.route.params._id
@@ -596,9 +610,8 @@ class HomeComponent extends Component {
     console.log(keyword);
     axios
       .get(
-        'https://nominatim.openstreetmap.org/search?q=' +
-          keyword +
-          '&format=json&polygon_geojson=1&addressdetails=1',
+        'http://gogito.duckdns.org:3002/other/search/' +
+          keyword
       )
       .then(
         response => {
@@ -606,7 +619,7 @@ class HomeComponent extends Component {
           this.createNominatimResponseDataItem(response.data);
         },
         error => {
-          console.log(error.response.data.message);
+          console.log(error.response.message);
         },
       );
   }
@@ -658,6 +671,7 @@ class HomeComponent extends Component {
     this.endRouting();
     clearInterval(routingInterval);
     this.checkUserAuthentificate;
+    this.setState({spinner: false});
   }
   handleCancelBookingPress(bookingID) {
     Alert.alert(
@@ -669,7 +683,10 @@ class HomeComponent extends Component {
           onPress: () => console.log('Cancel delete Booking'),
           style: 'cancel',
         },
-        {text: 'Yes', onPress: () => this.cancelCurrentBooking(bookingID)},
+        {text: 'Yes', onPress: () => {
+          this.setState({spinner: true});
+          this.cancelCurrentBooking(bookingID)
+        }},
       ],
       {cancelable: false},
     );
@@ -689,19 +706,52 @@ class HomeComponent extends Component {
         />
         <View style={styles.overlay}>
           <View style={styles.body}>
+            <Spinner
+              visible={this.state.spinner}
+              textContent={'Processing...'}
+              textStyle={styles.spinnerTextStyle}
+              overlayColor='rgba(5, 5, 5, 0.95)'
+              color='white'
+            />
             <View style={styles.header}>
               <View style={styles.userOptions}>
                 <ModalDropdown
+                  ref={component => (this.drop_down = component)}
                   style={styles.dropdownIcon}
                   dropdownStyle={styles.dropdownList}
                   // renderSeparator={() => <View /> }
                   onSelect={userOption => this.handleDropdownSelect(userOption)}
                   onDropdownWillShow={() => this.checkUserAuthentificate()}
+                  dropdownStyle={{
+                    borderRadius: 6,
+                    backgroundColor: '#26344a',
+                    shadowColor: 'rgba(0, 0, 0, 0.2)',
+                    shadowOffset: {
+                      width: 0,
+                      height: 5,
+                    },
+                    shadowRadius: 20,
+                    shadowOpacity: 1,
+                    padding: 8,
+                  }}
+                  dropdownTextStyle={{
+                    fontFamily: 'poppins-500',
+                    fontSize: 16,
+                    fontStyle: 'normal',
+                    letterSpacing: 0,
+                    textAlign: 'left',
+                    color: '#ffffff',
+                    backgroundColor: '#26344a',
+                  }}
                   options={this.state.userOption}
                   renderRightComponent={() => (
-                    <Image
-                      style={styles.usericon}
-                      source={require('../../assets/nav-menu.png')}></Image>
+                    <TouchableOpacity
+                      style={styles.dropdownIconImg}
+                      onPress={() => this.drop_down.show()}>
+                      <Image
+                        style={styles.usericon}
+                        source={require('../../assets/nav-menu.png')}></Image>
+                    </TouchableOpacity>
                   )}></ModalDropdown>
               </View>
               <View style={styles.searchBox}>

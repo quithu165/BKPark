@@ -10,8 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import styles from '../styles/SignupInfoStyles'
-const axios = require('axios');
-class SignupInfoComponent extends Component {
+import SignupInfoModel from '../model/SignupInfoModel'
+class SignupInfoComponent extends SignupInfoModel {
   constructor(props) {
     super(props);
     // console.log(this.props.route.params);
@@ -22,40 +22,7 @@ class SignupInfoComponent extends Component {
     email: '',
     personalID: '',
   };
-  handleFName = (text) => {
-    this.setState({fname: text});
-  };
-  handleLName = (text) => {
-    this.setState({lname: text});
-  };
-  handleEmail = (text) => {
-    this.setState({email: text});
-  };
-  handlePersonalID = (text) => {
-    this.setState({personalID: text});
-  };
-
-  register = (username, pass, fname, lname, email, personalID) => {
-    axios
-      .post('http://gogito.duckdns.org:3002/register', {
-        username: username,
-        password: pass,
-        name: {
-          FName: fname,
-          LName: lname,
-        },
-        email: email,
-        personalID: personalID,
-        userType: 'Customer',
-      })
-      .then((response) => {
-        console.log(JSON.stringify(response.data.username));
-        this.props.navigation.navigate('login');
-      })
-      .catch((error) => {
-        console.log(error.response.message);
-      });
-  };
+  
   render() {
     return (
       <ImageBackground
@@ -117,7 +84,7 @@ class SignupInfoComponent extends Component {
               this.state.email,
               this.state.personalID,
             );
-            console.log(this.props.route);
+            // console.log(this.props.route);
             // console.log(111)
           }}>
           <Text style={styles.signupText}>Next</Text>
