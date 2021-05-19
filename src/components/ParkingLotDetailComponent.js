@@ -12,7 +12,9 @@ import {
 } from 'react-native-table-component';
 import {Overlay} from 'react-native-elements';
 import Spinner from 'react-native-loading-spinner-overlay';
-import ParkingLotDetailModel from '../model/ParkingLotDetailModel'
+import ParkingLotDetailModel from '../model/ParkingLotDetailModel';
+const axios = require('axios');
+var updateDataInterval;
 class ParkingLotDetailComponent extends ParkingLotDetailModel {
   constructor(props) {
     super(props);
@@ -33,12 +35,37 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
     bookingAvalable: true,
   };
 
-  componentDidMount() {
+  componentDidMount() {}
+  getDataFromServer(parkinglotID) {
+    console.log('DATA UPDATING');
+    axios
+      .get('http://gogito.duckdns.org:3002/parkinglots/' + parkinglotID)
+      .then(
+        response => {
+          this.setState({areaList: response.data.area});
+        },
+        error => {
+          console.log(error.response.data);
+        },
+      );
+  }
+  updateParkingLotDB(parkinglotID) {
+    console.log('BEGIN UPDATE DATA / 2S');
+    updateDataInterval = setInterval(
+      () => this.getDataFromServer(parkinglotID),
+      2000,
+    );
+  }
+  stopUpdateParkingLotDB() {
+    console.log('END UPDATE DATA / 2S');
+    clearInterval(updateDataInterval);
   }
   renderItem = ({item}) => (
     <TouchableOpacity
       style={styles.parkingLotItemWrapper}
-      onPress={() => this.checkBookingAvailable(item.name)}>
+      onPress={() => {
+        this.checkBookingAvailable(item.name);
+      }}>
       <View style={styles.parkingLotItemNameWrapper}>
         <View>
           <Text>{item.name}</Text>
@@ -99,7 +126,10 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
               overlayBackgroundColor="red"
               overlayStyle={styles.showParkingDetailOverlay}
               isVisible={this.state.showBooking}
-              onBackdropPress={() => this.toggleShowParkingSLot()}>
+              onBackdropPress={() => {
+                this.stopUpdateParkingLotDB();
+                this.toggleShowParkingSLot();
+              }}>
               <Text style={styles.titleList}> BOOKING</Text>
               <View style={styles.header}>
                 <View style={styles.headerName}>
@@ -175,7 +205,10 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
           {/* /////FLOAT COMPONENT */}
           <TouchableOpacity
             style={styles.bookingBtn}
-            onPress={() => this.handleBookingPress()}>
+            onPress={() => {
+              this.updateParkingLotDB(this.state.parkingLotID);
+              this.handleBookingPress();
+            }}>
             <Text style={styles.bookTxt}> BOOK </Text>
           </TouchableOpacity>
         </View>

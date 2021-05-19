@@ -1,7 +1,7 @@
 const React = require('react-native');
 
 import {Dimensions} from 'react-native';
-import { colors } from 'react-native-elements';
+import {colors} from 'react-native-elements';
 import {white} from 'react-native-paper/lib/typescript/styles/colors';
 
 const {StyleSheet} = React;
@@ -47,6 +47,15 @@ export default {
     right: '2%',
     top: '12%',
     bottom: '12%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.51,
+    shadowRadius: 13.16,
+
+    elevation: 20,
   },
   searchIconArea: {
     flex: 3,
@@ -91,9 +100,9 @@ export default {
     width: '50%',
     justifyContent: 'center',
   },
-  usericon: {  
+  usericon: {
     width: 35,
-    height: 35
+    height: 35,
   },
   map: {
     flex: 1,
@@ -120,7 +129,7 @@ export default {
     borderColor: 'black',
     backgroundColor: '#b3b3b3',
     right: 30,
-    top: '80%',
+    top: '70%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -155,7 +164,7 @@ export default {
     borderColor: 'black',
     backgroundColor: '#b3b3b3',
     right: 30,
-    top: '70%',
+    top: '60%',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -183,17 +192,22 @@ export default {
   },
   cancelBooking: {
     position: 'absolute',
-    width: 150,
     backgroundColor: '#F12809',
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 45,
-    top: '85%',
+    height: 30,
+    width: 30,
+    top: 10,
+    left: 10,
   },
   showListButton: {
     fontSize: 18,
     color: 'white',
+  },
+  cancelBookingBtn: {
+    color: 'black',
+    fontSize: 25,
   },
   showDataOverlay: {
     width: '80%',
@@ -252,6 +266,72 @@ export default {
     fontSize: 10,
   },
   spinnerTextStyle: {
-    color:'white',
-  }
+    color: 'white',
+  },
+  detailBookingInfoWrapper: {
+    position: 'absolute',
+    height: 120,
+    width: '100%',
+    backgroundColor: 'white',
+    bottom: 0,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 11,
+    },
+    shadowOpacity: 0.57,
+    shadowRadius: 15.19,
+
+    elevation: 23,
+  },
+  detailBookingName: {
+    position: 'absolute',
+    left: 55,
+    top: 5,
+    width: '70%',
+    height: 45,
+    // backgroundColor: 'yellow',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  distanceToDes: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    width: '12%',
+    height: 45,
+    backgroundColor: '#ccefff',
+    borderRadius: 20,
+    borderColor: 'black',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookingNameTxt: {
+    fontSize: 20,
+  },
+  distanceToNextStep: {
+    position: 'absolute',
+    left: 5,
+    bottom: 15,
+    width: '12%',
+    height: 45,
+    backgroundColor: '#ccffcc',
+    borderRadius: 20,
+    borderColor: 'black',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  instruction: {
+    position: 'absolute',
+    left: 55,
+    bottom: 15,
+    width: '70%',
+    height: 45,
+    // backgroundColor: 'yellow',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  instructionTxt: {
+    fontSize: 15,
+  },
 };

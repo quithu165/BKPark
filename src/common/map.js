@@ -34,10 +34,10 @@ const map = `<!DOCTYPE html>
   
     <style>
       .text-labels {
-        font-size: 1em;
+        font-size: 8pt;
         width: 50pt;
-        font-weight: 700;
-        color: white;
+        font-weight: 300;
+        color: black;
       }
     </style>
   
@@ -90,7 +90,7 @@ const map = `<!DOCTYPE html>
       additonalLayer.addLayer(TruongSa); 
 
       mymap.on("zoomend", function () {
-        if (mymap.getZoom() <= 4) {
+        if (mymap.getZoom() <= 3) {
           mymap.removeLayer(additonalLayer);
         } else {
           mymap.addLayer(additonalLayer);
@@ -225,6 +225,7 @@ const map = `<!DOCTYPE html>
               style: routingStyle,
             });
             routingLayer.addLayer(routingGEOdata);
+            window.ReactNativeWebView.postMessage(JSON.stringify(data[0].distance));
             console.log(routingLine);
           });
       }

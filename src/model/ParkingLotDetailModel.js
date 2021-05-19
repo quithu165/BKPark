@@ -14,7 +14,9 @@ import {Overlay} from 'react-native-elements';
 // import DropDownPicker from 'react-native-dropdown-picker';
 import Spinner from 'react-native-loading-spinner-overlay';
 const axios = require('axios');
+var updateDataInterval;
 class ParkingLotDetailModel extends Component {
+
     updateAreaDB() {
         var data = this.props.route.params.area;
         var test = [];
@@ -72,7 +74,6 @@ class ParkingLotDetailModel extends Component {
           response => {
             console.log(JSON.stringify(response.data.currentBooking));
             curBooking = response.data.currentBooking;
-            this.setState({spinner: false});
             if (
               response.data.currentBooking === undefined ||
               response.data.currentBooking === ''
@@ -89,6 +90,7 @@ class ParkingLotDetailModel extends Component {
             console.log(error.response.data);
           },
         );
+        this.setState({spinner: false});
         // console.log(this.state.bookingAvalable);
         // return this.state.bookingAvalable;
       }
