@@ -136,7 +136,9 @@ export default class App extends React.Component {
             <Stack.Screen
               name="parkingdetail"
               component={ParkingLotDetailScreen}
-              options={{}}
+              options={{
+                headerShown: false,
+              }}
             />
 
             <Stack.Screen name="map" component={MapScreen} options={{}} />

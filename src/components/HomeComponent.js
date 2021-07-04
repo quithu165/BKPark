@@ -18,6 +18,8 @@ import {Overlay} from 'react-native-elements';
 import Geolocation from '@react-native-community/geolocation';
 import Spinner from 'react-native-loading-spinner-overlay';
 import Tip from 'react-native-tip';
+import API from '../common/api';
+import {Icon} from 'react-native-elements';
 const axios = require('axios');
 var routingInterval;
 var userCheckingInterval;
@@ -62,6 +64,14 @@ class HomeComponent extends Component {
     timerInterval: 5000,
     arrConNote: '1',
     detectPLOpns: '1',
+    showParkingDetail: false,
+    bookingDetail: {
+      name: '',
+      address: '',
+      price: '',
+      area: '',
+      time: '',
+    },
   };
 
   componentDidMount() {
@@ -137,8 +147,6 @@ class HomeComponent extends Component {
         case 1:
           this.props.navigation.navigate('signupuser');
           break;
-        case 2:
-          this.props.navigation.navigate('map', {test: '123456'});
         default:
       }
     } else {
@@ -149,15 +157,17 @@ class HomeComponent extends Component {
             this.props.route.params,
           );
           break;
-
         case 1:
+          this.props.navigation.navigate('map', this.props.route.params._id);
+          break;
+        case 2:
           this.props.navigation.navigate(
             'addplate',
             this.props.route.params._id,
           );
           break;
 
-        case 2:
+        case 3:
           Alert.alert(
             'Logout',
             'Do you want to logout?',
@@ -176,9 +186,6 @@ class HomeComponent extends Component {
           );
 
           break;
-        case 3:
-          this.props.navigation.navigate('map');
-          break;
         default:
       }
     }
@@ -187,7 +194,7 @@ class HomeComponent extends Component {
   // - Set up menu appearing when dropdown button clicked
   // - Set up which components and button appear base on current situation (not login, login and booking)
   checkUserAuthentificate() {
-    console.log(this.state.detectPLOpns);
+    // console.log(this.state.detectPLOpns);
     this.setState({
       userOption: [],
     });
@@ -195,47 +202,41 @@ class HomeComponent extends Component {
     if (this.props.route.params !== undefined) {
       var data = this.props.route.params;
       this.setState({
-        userOption: [
-          'User Infomation',
-          'Add license plate',
-          'Quit',
-          'Map Testing',
-        ],
+        userOption: ['User Infomation', 'History', 'Add license plate', 'Quit'],
       });
 
-      axios
-        .get('http://gogito.duckdns.org:3002/users/' + this.state.userID)
-        .then(
-          response => {
-            this.setState({userStatus: '1'});
-            data = response.data;
-            if (
-              data.currentBooking !== undefined &&
-              data.currentBooking !== '' &&
-              data.currentBooking != null
-            ) {
-              this.setState({checkBooking: true});
-              this.setState({checkingLogin: false});
-              this.getCurrentBookingID(this.state.userID, 3);
-              console.log(JSON.stringify(this.state.arrConNote.length));
-              if (this.state.arrConNote.length === 1) {
-                this.checkingDistance(data.currentBooking);
-              }
-            } else {
-              this.setState({checkingLogin: true});
-              this.setState({checkBooking: false});
-            }
-          },
-          error => {
-            console.log(error.response.data.message);
-          },
-        );
-      if (this.state.checkingLogin === true) 
-      this.setState({spinner: false});
+      axios.get(API.user + this.state.userID).then(
+        response => {
+          this.setState({userStatus: '1'});
+          data = response.data;
+          if (
+            data.currentBooking !== undefined &&
+            data.currentBooking !== '' &&
+            data.currentBooking != null
+          ) {
+            this.setState({checkBooking: true});
+            this.setState({checkingLogin: false});
+            this.getCurrentBookingID(this.state.userID, 3);
+            // console.log(JSON.stringify(this.state.arrConNote.length));
+            // if (this.state.arrConNote.length === 1) {
+            //   this.checkingDistance(data.currentBooking);
+            // }
+          } else {
+            this.setState({checkingLogin: true});
+            this.setState({checkBooking: false});
+            this.endRouting();
+            clearInterval(routingInterval);
+          }
+        },
+        error => {
+          console.log(error.response.data.message);
+        },
+      );
+      if (this.state.checkingLogin === true) this.setState({spinner: false});
     } else {
       this.setState({checkBooking: false});
       this.setState({userStatus: 0});
-      this.setState({userOption: ['Login', 'Signup', 'Map Testing']});
+      this.setState({userOption: ['Login', 'Signup']});
       this.setState({checkingLogin: false});
     }
   }
@@ -262,9 +263,9 @@ class HomeComponent extends Component {
   }
   //Convert from status of parking lot to consider available slot, only: full, normal and empty in general
   converStatus2Level(status) {
-    if (status >= 0.5) return 'Empty';
+    if (status >= 0.5) return 'Full';
     else if (status > 0) return 'Normal';
-    return 'Full';
+    return 'Empty';
   }
   //Divided into 3 types, each types has different icons
   markParkingBaseLoc(parkingArray, size) {
@@ -355,7 +356,7 @@ class HomeComponent extends Component {
     );
 
     axios
-      .post('http://gogito.duckdns.org:3002/cal_coor', {
+      .post(API.parkinglist, {
         current: {
           latitude: longitude,
           longitude: latitude,
@@ -364,7 +365,7 @@ class HomeComponent extends Component {
       })
       .then(
         response => {
-          // console.log(response.data.resultArray[1]);
+          console.log(response.data.resultArray[0].parkinglot.area[3]);
           var sizeOfResponse = JSON.stringify(response.data.resultArray.length);
           this.markParkingBaseLoc(response.data.resultArray, sizeOfResponse);
           this.createOverlayList(response.data.resultArray, sizeOfResponse);
@@ -418,7 +419,7 @@ class HomeComponent extends Component {
   );
   //Scan data from server and export parking lot list
   createOverlayList(data, size) {
-    // console.log(size);
+    // console.log(data);
     this.setState({parkingList: []});
     for (var i = 0; i < size; i++) {
       var parkingItem;
@@ -428,13 +429,13 @@ class HomeComponent extends Component {
       // console.log(this.props.route.params._id);
       switch (this.converStatus2Level(data[i].parkinglot.status)) {
         case 'Full':
-          iconRequire = require('../../assets/emptySlots.png');
+          iconRequire = require('../../assets/fullSlots.png');
           break;
         case 'Normal':
           iconRequire = require('../../assets/normalSlots.png');
           break;
         case 'Empty':
-          iconRequire = require('../../assets/fullSlots.png');
+          iconRequire = require('../../assets/emptySlots.png');
           break;
         default:
           break;
@@ -452,7 +453,7 @@ class HomeComponent extends Component {
       parkingItem = {
         ...data[i].parkinglot,
         icon: iconRequire,
-        distance: '5km',
+        distance: Math.round(data[i].distance*10)/10 + 'km',
         freeSlot: freeslot,
         totalSlot: totalslot,
         userID:
@@ -488,8 +489,9 @@ class HomeComponent extends Component {
     var status;
     var price = 1000000000;
     console.log('UPDATE: update status for parking lot');
-    axios.get('http://www.gogito.duckdns.org:3002/parkinglots/' + id).then(
+    axios.get(API.parkinglots + id).then(
       response => {
+        console.log('Get Detail Popup:' + response.data);
         name = JSON.stringify(response.data.name);
         status = Math.round(response.data.status * 100) + '%';
 
@@ -534,9 +536,10 @@ class HomeComponent extends Component {
   // case 2: if not, user close to destination over 5 mins, then auto turn booking into success
   requestSuccessBookingToServer(bookingID) {
     console.log(bookingID);
-    axios.put('http://gogito.duckdns.org:3002/bookings/' + bookingID).then(
+    axios.put(API.booking + bookingID).then(
       response => {
         this.checkUserAuthentificate;
+        this.setState({spinner: false});
       },
       error => {
         console.log(error.response.data.message);
@@ -561,7 +564,7 @@ class HomeComponent extends Component {
     if (this.state.timer >= 300000 / this.state.timerInterval) {
       this.setState({timer: 0});
       this.successCurrentBooking(bookingID);
-      clearInterval(checkingDistanceInterval);
+      // clearInterval(checkingDistanceInterval);
     }
   }
   // When distance between user and des less than 150, then ask for arrival confimation
@@ -637,7 +640,7 @@ class HomeComponent extends Component {
   }
   getCurrentBookingLotID(bookingID, options) {
     console.log('getCurrentBookingLotID: ' + bookingID);
-    axios.get('http://gogito.duckdns.org:3002/bookings/' + bookingID).then(
+    axios.get(API.booking + bookingID).then(
       response => {
         switch (options) {
           case 1:
@@ -645,6 +648,7 @@ class HomeComponent extends Component {
             break;
           case 2:
             this.getCurrentBookingDetailInfo(response.data);
+
           default:
             break;
         }
@@ -655,11 +659,21 @@ class HomeComponent extends Component {
     );
   }
   getCurrentBookingDetailInfo(data) {
-    this.setState({curBookingName: data.ParkinglotName});
+    // console.log(data);
+    this.setState({curBookingName: data.parkinglotName});
+    this.setState({
+      bookingDetail: {
+        name: data.parkinglotName,
+        address: data.parkinglotAddress,
+        price: data.price,
+        area: data.areaName,
+        time: data.created_at,
+      },
+    });
   }
   getCurrentBookingID(userID, option) {
     console.log('getCurrentBookingID: ' + userID);
-    axios.get('http://gogito.duckdns.org:3002/users/' + userID).then(
+    axios.get(API.user + userID).then(
       response => {
         switch (option) {
           case 1:
@@ -668,10 +682,14 @@ class HomeComponent extends Component {
           case 2:
             this.cancelCurrentBooking(response.data.currentBooking);
             this.checkUserAuthentificate;
-            
+
             break;
           case 3:
             this.getCurrentBookingLotID(response.data.currentBooking, 2);
+            break;
+          case 4:
+            this.successCurrentBooking(response.data.currentBooking);
+            break;
           default:
             break;
         }
@@ -711,7 +729,7 @@ class HomeComponent extends Component {
   }
   callNominatimAPI(keyword) {
     console.log(keyword);
-    axios.get('http://gogito.duckdns.org:3002/other/search/' + keyword).then(
+    axios.get(API.searching + keyword).then(
       response => {
         // console.log(JSON.stringify(response.data[1].boundingbox));
         this.createNominatimResponseDataItem(response.data);
@@ -736,7 +754,7 @@ class HomeComponent extends Component {
       <TouchableOpacity
         style={styles.parkingLotItemNameWrapper}
         onPress={() => {
-          console.log(item);
+          // console.log(item);
           this.toggleShowSearchResult();
           this.setState({detectPLOpns: '22'});
           this.saveCurLocation(
@@ -763,11 +781,10 @@ class HomeComponent extends Component {
   // *******************************************
   async cancelCurrentBooking(bookingID) {
     // console.log(bookingID);
-    await axios.delete('http://gogito.duckdns.org:3002/bookings/' + bookingID).then(
+    await axios.delete(API.booking + bookingID).then(
       response => {
         // console.log(JSON.stringify(response.data));
-        console.log('Cancel booking')
-        
+        console.log('Cancel booking');
       },
       error => {
         console.log(error.response.data.message);
@@ -776,7 +793,6 @@ class HomeComponent extends Component {
     this.endRouting();
     clearInterval(routingInterval);
     this.checkUserAuthentificate();
-    
   }
   handleCancelBookingPress() {
     Alert.alert(
@@ -798,6 +814,48 @@ class HomeComponent extends Component {
       ],
       {cancelable: false},
     );
+  }
+    //*****************************************
+  //                HANDLE SUCCESS BOOKING
+  // *******************************************
+  handleSuccessBookingPress() {
+    Alert.alert(
+      'Complete Booking',
+      'Did you arrived?',
+      [
+        {
+          text: 'No',
+          onPress: () => console.log('Cancel success Booking'),
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: () => {
+            this.setState({spinner: true});
+            this.getCurrentBookingID(this.state.userID, 4);
+          },
+        },
+      ],
+      {cancelable: false},
+    );
+  }
+  //*****************************************
+  //                HANDLE SHOW DETAIL CURRENT BOOKING
+  // ******************************************
+  getBookingDetail(item) {
+    this.setState({
+      bookingDetail: {
+        name: item.title,
+        address: item.address,
+        area: item.area,
+        price: item.price,
+        time: item.time,
+      },
+    });
+    this.toggleShowBookingDetal();
+  }
+  toggleShowBookingDetal() {
+    this.setState({showParkingDetail: !this.state.showParkingDetail});
   }
   //RENDER=========================================================================================================
   render() {
@@ -877,9 +935,12 @@ class HomeComponent extends Component {
                   <TouchableOpacity
                     style={styles.searchIconArea}
                     onPress={() => this.getKeyWord()}>
-                    <Image
-                      style={styles.searchIcon}
-                      source={require('../../assets/search-icon.png')}></Image>
+                    <Icon
+                      name="search"
+                      type="feather"
+                      color="black"
+                      size={35}
+                    />
                   </TouchableOpacity>
 
                   <View style={styles.searchTemp}></View>
@@ -893,9 +954,18 @@ class HomeComponent extends Component {
               onPress={() => {
                 this.getCurrentBookingID(this.state.userID, 1);
               }}>
+              <Icon name="navigation" type="feather" color="blue" size={40} />
+            </TouchableOpacity>
+          )}
+          {this.state.checkBooking && (
+            <TouchableOpacity
+              style={styles.confirmIcon}
+              onPress={() => {
+               this.handleSuccessBookingPress();
+              }}>
               <Image
                 style={styles.geolocationIconSize}
-                source={require('../../assets/routing.png')}></Image>
+                source={require('../../assets/carcheck.png')}></Image>
             </TouchableOpacity>
           )}
           {this.state.checkBooking && (
@@ -905,11 +975,13 @@ class HomeComponent extends Component {
                 onPress={() => {
                   this.handleCancelBookingPress();
                 }}>
-                <Image
-                  style={styles.geolocationIconSize}
-                  source={require('../../assets/cancel.png')}></Image>
+                <Icon name="x" type="feather" color="black" size={35} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.detailBookingName}>
+              <TouchableOpacity
+                style={styles.detailBookingName}
+                onPress={() => {
+                  this.toggleShowBookingDetal();
+                }}>
                 <Text style={styles.bookingNameTxt}>
                   {this.state.curBookingName}
                 </Text>
@@ -978,6 +1050,59 @@ class HomeComponent extends Component {
               <Text style={styles.showListButton}>P</Text>
             </TouchableOpacity>
           )}
+          <Overlay
+            fullScreen="true"
+            windowBackgroundColor="#EF2440"
+            overlayBackgroundColor="red"
+            overlayStyle={styles.showDataOverlay}
+            isVisible={this.state.showParkingDetail}
+            onBackdropPress={() => this.toggleShowBookingDetal()}>
+            <Text style={styles.titleList}> BOOKING DETAIL</Text>
+            <View style={styles.darkLineWrapper}>
+              <View style={styles.darkLine}></View>
+            </View>
+
+            <View style={styles.infoWrapper}>
+              <Icon name="car" type="fontisto" color="#4A494B" size={24} />
+              <View style={styles.txtInfoWrapper}>
+                <Text>{this.state.bookingDetail.name}</Text>
+              </View>
+            </View>
+            <View style={styles.infoWrapper}>
+              <Icon name="map-pin" type="feather" color="#4A494B" size={24} />
+              <View style={styles.txtInfoWrapper}>
+                <Text>{this.state.bookingDetail.address}</Text>
+              </View>
+            </View>
+            <View style={styles.infoWrapper}>
+              <Icon
+                name="dollar-sign"
+                type="feather"
+                color="#4A494B"
+                size={24}
+              />
+              <View style={styles.txtInfoWrapper}>
+                <Text>{this.state.bookingDetail.price}</Text>
+              </View>
+            </View>
+            <View style={styles.infoWrapper}>
+              <Icon
+                name="arrow-left-circle"
+                type="feather"
+                color="#4A494B"
+                size={24}
+              />
+              <View style={styles.txtInfoWrapper}>
+                <Text>{this.state.bookingDetail.area}</Text>
+              </View>
+            </View>
+            <View style={styles.infoWrapper}>
+              <Icon name="clock" type="feather" color="#4A494B" size={24} />
+              <View style={styles.txtInfoWrapper}>
+                <Text>{this.state.bookingDetail.time}</Text>
+              </View>
+            </View>
+          </Overlay>
         </View>
       </View>
     );

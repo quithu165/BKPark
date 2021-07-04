@@ -11,12 +11,12 @@ export default {
   parkingLotImgWrapper: {
     flex: 2,
     borderColor: 'black',
-    backgroundColor: '#F9FBFC',
+    backgroundColor: '#b3ffff',
   },
   parkingLotDetailWrapper: {
     flex: 8,
     borderColor: 'black',
-    backgroundColor: '#BDF9F8',
+    backgroundColor: '#f0f0f5',
     alignItems: 'center',
     
   },
@@ -25,7 +25,7 @@ export default {
     height: 60,
     width: '100%',
     borderColor: 'black',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#b3ffff',
     borderRadius: 35,
     top: '16%',
     flex: 1,
@@ -251,5 +251,21 @@ export default {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  backIcon:{
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#d1d1e0',
+    height: 50,
+    width: 50,
+    top: "81%",
+    left: 10,
+    borderRadius: 25,
+    borderColor: 'black'
+  },
+  tableScroll:{
+    width: '100%',
+    height: '30%'
   }
 };

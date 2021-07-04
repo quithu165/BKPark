@@ -175,6 +175,28 @@ export default {
 
     elevation: 20,
   },
+  confirmIcon: {
+    width: 60,
+    height: 60,
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    borderRadius: 15,
+    borderColor: 'black',
+    backgroundColor: '#b3b3b3',
+    left: 30,
+    top: '60%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.51,
+    shadowRadius: 13.16,
+
+    elevation: 20,
+  },
   geolocationIconSize: {
     width: 40,
     height: 40,
@@ -192,12 +214,12 @@ export default {
   },
   cancelBooking: {
     position: 'absolute',
-    backgroundColor: '#F12809',
+    // backgroundColor: '#F12809',
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 30,
-    width: 30,
+    height: 40,
+    width: 40,
     top: 10,
     left: 10,
   },
@@ -333,5 +355,21 @@ export default {
   },
   instructionTxt: {
     fontSize: 15,
+  },
+  infoWrapper:{
+    width: "95%",
+    height: 38,
+    alignItems: 'center',
+    flexDirection: 'row'
+  },
+  txtInfoWrapper:{
+    marginLeft: 5,
+  },
+  showDataOverlay: {
+    width: '80%',
+    height: '40%',
+    backgroundColor: '#F9F0F1',
+    borderRadius: 25,
+    position: 'absolute',
   },
 };

@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import API from '../common/api'
 const axios = require('axios');
 class AddPlateModel extends Component {
     handlePlate = (text) => {
@@ -8,7 +9,7 @@ class AddPlateModel extends Component {
           console.log(plateNumber);
           console.log(this.props.route.params);
         axios
-        .put('http://gogito.duckdns.org:3002/users/' + this.props.route.params, {
+        .put(API.user + this.props.route.params, {
           infoArray:{
               carplateNumber: plateNumber
           }

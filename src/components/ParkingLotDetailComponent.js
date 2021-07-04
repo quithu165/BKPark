@@ -1,5 +1,12 @@
 import React, {Component} from 'react';
-import {Text, View, Image, TouchableOpacity, FlatList} from 'react-native';
+import {
+  Text,
+  View,
+  Image,
+  TouchableOpacity,
+  FlatList,
+  ScrollView,
+} from 'react-native';
 import styles from '../styles/ParkingLotDetailStyles';
 import {
   Table,
@@ -10,7 +17,7 @@ import {
   Cols,
   Cell,
 } from 'react-native-table-component';
-import {Overlay} from 'react-native-elements';
+import {Overlay, Icon} from 'react-native-elements';
 import Spinner from 'react-native-loading-spinner-overlay';
 import ParkingLotDetailModel from '../model/ParkingLotDetailModel';
 const axios = require('axios');
@@ -34,8 +41,29 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
     spinner: false,
     bookingAvalable: true,
   };
-
-  componentDidMount() {}
+  updateAreaDB(data) {
+    var dataTable = [];
+    for (var i = 0; i < data.length; i++) {
+      var curRow = [data[i].name, data[i].freeslot, data[i].fullslot];
+      // console.log(curRow);
+      dataTable.push(curRow);
+    }
+    this.setState({tableData: dataTable});
+    console.log(this.state.tableData);
+  }
+  componentDidMount() {
+    setTimeout(() => {
+      this.updateAreaDB(this.props.route.params.area);
+    }, 500);
+    // updateDataInterval = setInterval(() => {
+    //   this.updateAreaDB();
+    // }, 3000);
+    console.log('Detail Component created');
+  }
+  componentWillUnmount() {
+    // clearInterval(updateDataInterval);
+    console.log('Detail Component mount');
+  }
   getDataFromServer(parkinglotID) {
     console.log('DATA UPDATING');
     axios
@@ -43,6 +71,7 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
       .then(
         response => {
           this.setState({areaList: response.data.area});
+          this.updateAreaDB(response.data.area);
         },
         error => {
           console.log(error.response.data);
@@ -111,14 +140,17 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
             <Text style={styles.detailTittle}>Status</Text>
           </View>
           <View style={styles.singleDetailContentWrapper}>
-            <Table borderStyle={{borderWidth: 2, borderColor: '#c8e1ff'}}>
-              <Row
-                data={this.state.tableHead}
-                style={styles.head}
-                textStyle={styles.text}
-              />
-              <Rows data={this.state.tableData} textStyle={styles.text} />
-            </Table>
+            <ScrollView style={styles.tableScroll}>
+              <Table borderStyle={{borderWidth: 2, borderColor: '#c8e1ff'}}>
+                <Row
+                  data={this.state.tableHead}
+                  style={styles.head}
+                  textStyle={styles.text}
+                />
+                <Rows data={this.state.tableData} textStyle={styles.text} />
+              </Table>
+            </ScrollView>
+
             {/* OVERLAY BOOKING */}
             <Overlay
               fullScreen="true"
@@ -210,6 +242,13 @@ class ParkingLotDetailComponent extends ParkingLotDetailModel {
               this.handleBookingPress();
             }}>
             <Text style={styles.bookTxt}> BOOK </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.backIcon}
+            onPress={() => {
+              this.props.navigation.goBack();
+            }}>
+            <Icon name="arrow-left" type="feather" color="black" size={30} />
           </TouchableOpacity>
         </View>
 

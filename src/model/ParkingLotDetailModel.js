@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import {Text, View, Image, TouchableOpacity, FlatList} from 'react-native';
 import styles from '../styles/ParkingLotDetailStyles';
+import API from '../common/api'
 import {
   Table,
   TableWrapper,
@@ -17,21 +18,7 @@ const axios = require('axios');
 var updateDataInterval;
 class ParkingLotDetailModel extends Component {
 
-    updateAreaDB() {
-        var data = this.props.route.params.area;
-        var test = [];
-        this.setState({tableData: []});
-        for (var i = 0; i < data.length; i++) {
-          // var curRow = {[data[i].name, data[i].freeslot, data[i].fullslot]};
-          // console.log(curRow);
-          // this.setState({tableData:[
-          //   ...this.state.tableData,
-          //   curRow,
-          // ]});
-          this.state.tableData.push(curRow);
-        }
-        console.log(this.state.tableData);
-      }
+    
       toggleShowParkingSLot() {
         // console.log(this.state.showBooking);
         this.setState({showBooking: !this.state.showBooking});
@@ -70,7 +57,7 @@ class ParkingLotDetailModel extends Component {
         // this.createAreaList();
       }
       checkBookingAvailable(area) {
-        axios.get('http://gogito.duckdns.org:3002/users/' + this.state.userID).then(
+        axios.get(API.user + this.state.userID).then(
           response => {
             console.log(JSON.stringify(response.data.currentBooking));
             curBooking = response.data.currentBooking;
@@ -96,7 +83,7 @@ class ParkingLotDetailModel extends Component {
       }
       booking(area) {
         axios
-          .post('http://gogito.duckdns.org:3002/bookings', {
+          .post(API.booking, {
             userID: this.state.userID,
             parkinglotID: this.state.parkingLotID,
             areaName: area,

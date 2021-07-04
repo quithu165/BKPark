@@ -9,6 +9,7 @@ import {
   Text,
   Alert,
 } from 'react-native';
+import API from '../common/api'
 import styles from '../styles/LoginStyles';
 const axios = require('axios');
 
@@ -27,7 +28,7 @@ class LoginModel extends Component {
         else if (pass == '') Alert.alert('Password can be empty');
         else {
           axios
-            .post('http://gogito.duckdns.org:3002/login', {
+            .post(API.login, {
               username: name,
               password: pass,
             })
